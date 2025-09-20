@@ -61,21 +61,21 @@
             <table class="table table-sm table-hover">
                 <thead>
                     <tr>
+                        <th>Id пользователя</th>
                         <th>Имя</th>
                         <th>Email</th>
                         <th>Телефон</th>
                         <th>Заказов</th>
-                        <th>Дата</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for c in clients %}
                     <tr>
+                        <td>{{ c.id }}</td>
                         <td>{{ c.name }}</td>
                         <td><code>{{ c.email }}</code></td>
                         <td>{{ c.phone or '-' }}</td>
                         <td>{{ c.orders | length }}</td>
-                        <td>{{ c.created_at.strftime('%d.%m.%Y') }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -87,6 +87,7 @@
 </div>
 
 <!-- ================== ФОРМА ЗАКАЗА ================== -->
+<!-- ================== ФОРМА ЗАКАЗА ================== -->
 <div class="card mb-4">
     <div class="card-header bg-light">
         <h5 class="mb-0">➕ Добавить заказ</h5>
@@ -94,29 +95,20 @@
     <div class="card-body">
         <form method="POST" action="{{ url_for('web.add_order') }}">
             <div class="row g-3">
+
                 <div class="col-md-4">
-                    {{ add_order_form.name.label(class="form-label") }}
-                    {{ add_order_form.name(class="form-control") }}
-                    {% if add_order_form.name.errors %}
-                        {% for error in add_order_form.name.errors %}
+                    {{ add_order_form.client_id.label(class_="form-label") }}
+                    {{ add_order_form.client_id(class_="form-control", placeholder="Например: 123") }}
+                    {% if add_order_form.client_id.errors %}
+                        {% for error in add_order_form.client_id.errors %}
                             <div class="text-danger small">{{ error }}</div>
                         {% endfor %}
                     {% endif %}
                 </div>
 
-                <div class="col-md-4">
-                    {{ add_order_form.email.label(class="form-label") }}
-                    {{ add_order_form.email(class="form-control") }}
-                    {% if add_order_form.email.errors %}
-                        {% for error in add_order_form.email.errors %}
-                            <div class="text-danger small">{{ error }}</div>
-                        {% endfor %}
-                    {% endif %}
-                </div>
-
-                <div class="col-md-3">
-                    {{ add_order_form.product_id.label(class="form-label") }}
-                    {{ add_order_form.product_id(class="form-select") }}
+                <div class="col-md-5">
+                    {{ add_order_form.product_id.label(class_="form-label") }}
+                    {{ add_order_form.product_id(class_="form-select", aria_label="Выберите товар") }}
                     {% if add_order_form.product_id.errors %}
                         {% for error in add_order_form.product_id.errors %}
                             <div class="text-danger small">{{ error }}</div>
@@ -124,9 +116,9 @@
                     {% endif %}
                 </div>
 
-                <div class="col-md-1">
-                    {{ add_order_form.quantity.label(class="form-label") }}
-                    {{ add_order_form.quantity(class="form-control") }}
+                <div class="col-md-2">
+                    {{ add_order_form.quantity.label(class_="form-label") }}
+                    {{ add_order_form.quantity(class_="form-control", type="number", min="1", max="999") }}
                     {% if add_order_form.quantity.errors %}
                         {% for error in add_order_form.quantity.errors %}
                             <div class="text-danger small">{{ error }}</div>
@@ -134,14 +126,14 @@
                     {% endif %}
                 </div>
 
-                <div class="col-12 mt-3">
-                    {{ add_order_form.submit(class="btn btn-success w-100") }}
+                <div class="col-12 mt-4">
+                    {{ add_order_form.submit(class_="btn btn-success btn-lg w-100") }}
                 </div>
+
             </div>
         </form>
     </div>
 </div>
-
 <!-- ================== СПИСОК ЗАКАЗОВ ================== -->
 <div class="card mb-4">
     <div class="card-header bg-light">

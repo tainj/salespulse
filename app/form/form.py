@@ -5,6 +5,15 @@ from wtforms.fields.simple import EmailField, StringField, SubmitField
 from wtforms.validators import DataRequired, Regexp, NumberRange, Email
 from wtforms.widgets.core import NumberInput
 
+from app.models.models import Product
+
+CATEGORIES = [
+    ('electronics', 'Электроника'),
+    ('books', 'Книги'),
+    ('clothing', 'Одежда'),
+    ('food', 'Еда'),
+    ('other', 'Другое'),
+]
 
 class ClientForm(FlaskForm):
     name = StringField()
@@ -20,50 +29,17 @@ class ClientForm(FlaskForm):
 
 
 class OrderForm(FlaskForm):
-    name = StringField("Имя клиента", validators=[
-        DataRequired(message="Введите имя клиента")
-    ])
+    client_id = IntegerField('ID клиента', validators=[DataRequired(), NumberRange(min=1)])
+    product_id = SelectField('Товар', coerce=int, validators=[DataRequired()])
+    quantity = IntegerField('Количество', validators=[DataRequired(), NumberRange(min=1, max=999)])
+    submit = SubmitField('Оформить заказ')
 
-    email = StringField("Email клиента", validators=[
-        DataRequired(message="Введите email клиента"),
-        Email(message="Некорректный email")
-    ])
-
-    product_id = IntegerField("ID продукта", validators=[
-        DataRequired(message="Введите ID продукта"),
-        NumberRange(min=1, message="ID продукта должен быть положительным числом")
-    ])
-
-    quantity = IntegerField("Количество", validators=[
-        DataRequired(message="Укажите количество"),
-        NumberRange(min=1, max=999, message="Количество должно быть от 1 до 999")
-    ], widget=NumberInput(min=1, max=999))
-
-    total_price = FloatField("Общая стоимость", validators=[
-        DataRequired(message="Укажите общую стоимость"),
-        NumberRange(min=0.01, message="Стоимость должна быть больше 0")
-    ])
-
-    status = SelectField("Статус заказа", choices=[
-        ('pending', 'Ожидает обработки'),
-        ('shipped', 'Отправлен'),
-        ('delivered', 'Доставлен')
-    ], validators=[DataRequired(message="Выберите статус заказа")])
-
-    submit = SubmitField("Создать заказ")
+    def __init__(self, products, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.product_id.choices = [(p.id, p.name) for p in products]
 
 class ProductForm(FlaskForm):
-    name = StringField("Название продукта", validators=[
-        DataRequired(message="Введите название продукта")
-    ])
-
-    price = FloatField("Цена", validators=[
-        DataRequired(message="Укажите цену продукта"),
-        NumberRange(min=0.01, message="Цена должна быть больше 0")
-    ])
-
-    category = StringField("Категория", validators=[
-        # Не обязательное поле
-    ])
-
-    submit = SubmitField("Добавить продукт")  # 👈 Не забудьте импортировать SubmitField!
+    name = StringField('Название', validators=[DataRequired()])
+    price = FloatField('Цена', validators=[DataRequired(), NumberRange(min=0)])
+    category = SelectField('Категория', choices=CATEGORIES, validators=[DataRequired()])
+    submit = SubmitField("Добавить продукт")

@@ -1,22 +1,26 @@
-from itertools import product
-
 from flask import Blueprint, render_template, redirect, url_for, flash
 
 from app.db import get_db
 from app.form.form import ClientForm, OrderForm, ProductForm
-from app.models.models import Client
+from app.models.models import Client, Product
 
 bp = Blueprint('web', __name__)
 
 
 @bp.route("/")
 def home():
-    order_form = OrderForm()
+    # получение данных
+    db_sess = get_db()
+    clients = db_sess.query(Client).all()
+    products = db_sess.query(Product).all()
+
+    # создание форм
+    order_form = OrderForm(products)
     client_form = ClientForm()
     product_form = ProductForm()
     return render_template('home.html',
                            add_order_form=order_form, add_client_form=client_form,
-                           add_product_form=product_form)
+                           add_product_form=product_form, clients=clients, products=products)
 
 @bp.route("/report")
 def report():
@@ -34,6 +38,7 @@ def add_client():
     if form.validate_on_submit():
         db_sess = get_db()
         try:
+            # проверяем, чтобы пользователя не было с таким же email
             existing = db_sess.query(Client).filter(Client.email == form.email.data).first()
             if existing:
                 flash("Этот email уже зарегистрирован.")
@@ -48,12 +53,12 @@ def add_client():
             db_sess.add(client)
             db_sess.commit()
             flash("Клиент добавлен!")
-            return redirect(url_for('web.add_client'))  # или redirect('/')
+            return redirect('/')
 
         except Exception as e:
-            db_sess.rollback()  # ← ОБЯЗАТЕЛЬНО! Откат при ошибке
+            db_sess.rollback()
             flash("Произошла ошибка при добавлении клиента.")
-            return render_template('home.html', form=form)
+            return redirect("/")
 
         finally:
             db_sess.close()
@@ -63,6 +68,35 @@ def add_client():
 def export():
     return "ERROR"
 
-@bp.route("/add_product")
+@bp.route("/add_product", methods=["GET", "POST"])
 def add_product():
-    return "ERROR"
+    form = ProductForm()
+
+    if form.validate_on_submit():
+        db_sess = get_db()
+        try:
+            existing = db_sess.query(Product).filter(Product.name == form.name.data).first()
+            if existing:
+                flash("Продукт с таким названием уже существует.")
+                return redirect("/")
+
+            # создаём новый продукт
+            product = Product(
+                name=form.name.data,
+                price=form.price.data,
+                category=form.category.data,
+            )
+            db_sess.add(product)
+            db_sess.commit()
+            flash("Продукт успешно добавлен!")
+            return redirect("/")
+
+        except Exception as e:
+            db_sess.rollback()
+            flash("Произошла ошибка при добавлении продукта. Попробуйте ещё раз.")
+            return redirect("/")
+
+        finally:
+            db_sess.close()
+
+    return redirect("/")
