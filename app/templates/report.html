@@ -1,0 +1,51 @@
+<!-- app/templates/report.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<h2 class="mb-4">📊 Отчёт по продажам</h2>
+
+<!-- График продаж -->
+<div class="mb-4">
+    {{ sales_chart|safe }}
+</div>
+
+<!-- Таблица общих данных -->
+<h4>📈 Общие данные</h4>
+<table class="table table-bordered">
+    <tr><th>Показатель</th><th>Значение</th></tr>
+    <tr><td>Всего заказов</td><td><strong>{{ total_orders }}</strong></td></tr>
+    <tr><td>Общая выручка</td><td><strong>{{ total_revenue }} ₽</strong></td></tr>
+    <tr><td>Средний чек</td><td><strong>{{ avg_ticket }} ₽</strong></td></tr>
+    <tr><td>Уникальных клиентов</td><td><strong>{{ unique_clients }}</strong></td></tr>
+</table>
+
+<h4 class="mt-5">📋 Все заказы</h4>
+{% if orders %}
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Клиент</th>
+                <th>Товар</th>
+                <th>Кол-во</th>
+                <th>Сумма</th>
+                <th>Дата</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for o in orders %}
+            <tr>
+                <td>{{ o.id }}</td>
+                <td>{{ o.client.name }}</td>
+                <td>{{ o.product.name }}</td>
+                <td>{{ o.quantity }}</td>
+                <td><strong>{{ o.total_price }} ₽</strong></td>
+                <td>{{ o.created_at.strftime('%d.%m.%Y') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <div class="alert alert-info">Нет данных для отчёта.</div>
+{% endif %}
+{% endblock %}

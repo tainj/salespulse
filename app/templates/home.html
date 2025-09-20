@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2 class="mb-4">🛍️ Добавить новый заказ</h2>
+
+<form method="POST" action="{{ url_for('web.add_order') }}" class="p-4 border rounded mb-4">
+    <div class="row g-3">
+        <div class="col-md-4">
+            <input type="text" name="client_name" placeholder="Имя клиента *" required class="form-control">
+        </div>
+        <div class="col-md-4">
+            <input type="email" name="email" placeholder="Email *" required class="form-control">
+        </div>
+        <div class="col-md-3">
+            <select name="product_id" class="form-select" required>
+                <option value="">Выберите товар</option>
+                {% for p in products %}
+                    <option value="{{ p.id }}">{{ p.name }} — {{ p.price }} ₽</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-1">
+            <input type="number" name="quantity" value="1" min="1" max="10" class="form-control">
+        </div>
+        <div class="col-12">
+            <button type="submit" class="btn btn-success w-100">✅ Добавить заказ</button>
+        </div>
+    </div>
+</form>
+
+<h3 class="mb-3">📋 Последние заказы</h3>
+{% if orders %}
+    <table class="table table-striped table-hover">
+        <thead>
+            <tr>
+                <th>Клиент</th>
+                <th>Товар</th>
+                <th>Кол-во</th>
+                <th>Сумма</th>
+                <th>Дата</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for o in orders %}
+            <tr>
+                <td>{{ o.client.name }}</td>
+                <td>{{ o.product.name }}</td>
+                <td>{{ o.quantity }}</td>
+                <td><strong>{{ o.total_price }} ₽</strong></td>
+                <td>{{ o.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <div class="alert alert-info">Пока нет заказов. 🛒 Добавьте первый!</div>
+{% endif %}
+
+<a href="{{ url_for('web.export') }}" class="btn btn-primary mt-3">📥 Экспорт в CSV</a>
+{% endblock %}
