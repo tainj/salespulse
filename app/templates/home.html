@@ -13,19 +13,30 @@
             {{ add_client_form.hidden_tag() }}
 
             <div class="row g-3">
+
                 <div class="col-md-4">
-                    {{ add_client_form.name.label(class="form-label") }}
-                    {{ add_client_form.name(class="form-control") }}
-                    {% if add_client_form.name.errors %}
-                        {% for error in add_client_form.name.errors %}
+                    {{ add_client_form.firstname.label(class_="form-label") }}
+                    {{ add_client_form.firstname(class_="form-control", placeholder="Иван") }}
+                    {% if add_client_form.firstname.errors %}
+                        {% for error in add_client_form.firstname.errors %}
                             <div class="text-danger small">{{ error }}</div>
                         {% endfor %}
                     {% endif %}
                 </div>
 
                 <div class="col-md-4">
-                    {{ add_client_form.email.label(class="form-label") }}
-                    {{ add_client_form.email(class="form-control") }}
+                    {{ add_client_form.lastname.label(class_="form-label") }}
+                    {{ add_client_form.lastname(class_="form-control", placeholder="Иванов") }}
+                    {% if add_client_form.lastname.errors %}
+                        {% for error in add_client_form.lastname.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+
+                <div class="col-md-4">
+                    {{ add_client_form.email.label(class_="form-label") }}
+                    {{ add_client_form.email(class_="form-control", placeholder="example@email.com") }}
                     {% if add_client_form.email.errors %}
                         {% for error in add_client_form.email.errors %}
                             <div class="text-danger small">{{ error }}</div>
@@ -34,8 +45,8 @@
                 </div>
 
                 <div class="col-md-4">
-                    {{ add_client_form.phone.label(class="form-label") }}
-                    {{ add_client_form.phone(class="form-control") }}
+                    {{ add_client_form.phone.label(class_="form-label") }}
+                    {{ add_client_form.phone(class_="form-control", placeholder="+7 (999) 123-45-67") }}
                     {% if add_client_form.phone.errors %}
                         {% for error in add_client_form.phone.errors %}
                             <div class="text-danger small">{{ error }}</div>
@@ -43,9 +54,20 @@
                     {% endif %}
                 </div>
 
-                <div class="col-12 mt-3">
-                    {{ add_client_form.submit(class="btn btn-primary w-100") }}
+                <div class="col-md-4">
+                    {{ add_client_form.country.label(class_="form-label") }}
+                    {{ add_client_form.country(class_="form-select", aria_label="Выберите страну") }}
+                    {% if add_client_form.country.errors %}
+                        {% for error in add_client_form.country.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
                 </div>
+
+                <div class="col-12 mt-4">
+                    {{ add_client_form.submit(class_="btn btn-primary w-100") }}
+                </div>
+
             </div>
         </form>
     </div>
@@ -54,8 +76,27 @@
 <!-- ================== СПИСОК КЛИЕНТОВ ================== -->
 <div class="card mb-4">
     <div class="card-header bg-light">
-        <h5 class="mb-0">👥 Все клиенты</h5>
+        <h5 class="mb-0">
+            👥
+            {% if selected_country %}
+                Клиенты: {{ selected_country }}
+            {% else %}
+                Все клиенты
+            {% endif %}
+        </h5>
+
+        <form method="GET" class="mt-2">
+            <div class="row g-2 align-items-center">
+                <div class="col-auto">
+                    {{ filter_form_clients.country(class="form-select form-select-sm") }}
+                </div>
+                <div class="col-auto">
+                    {{ filter_form_clients.submit(class="btn btn-sm btn-outline-secondary") }}
+                </div>
+            </div>
+        </form>
     </div>
+
     <div class="card-body">
         {% if clients %}
             <table class="table table-sm table-hover">
@@ -65,17 +106,19 @@
                         <th>Имя</th>
                         <th>Email</th>
                         <th>Телефон</th>
-                        <th>Заказов</th>
+                        <th>Страна</th>
+                        <th>Кол-во заказов</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for c in clients %}
                     <tr>
                         <td>{{ c.id }}</td>
-                        <td>{{ c.name }}</td>
+                        <td>{{ c.lastname }} {{ c.firstname }}</td>
                         <td><code>{{ c.email }}</code></td>
                         <td>{{ c.phone or '-' }}</td>
-                        <td>{{ c.orders | length }}</td>
+                        <td>{{ c.country }}</td>
+                        <td>{{ c.order_count }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -87,7 +130,6 @@
 </div>
 
 <!-- ================== ФОРМА ЗАКАЗА ================== -->
-<!-- ================== ФОРМА ЗАКАЗА ================== -->
 <div class="card mb-4">
     <div class="card-header bg-light">
         <h5 class="mb-0">➕ Добавить заказ</h5>
@@ -95,7 +137,9 @@
     <div class="card-body">
         <form method="POST" action="{{ url_for('web.add_order') }}">
             <div class="row g-3">
+                {{ add_order_form.hidden_tag() }}
 
+                <!-- Клиент -->
                 <div class="col-md-4">
                     {{ add_order_form.client_id.label(class_="form-label") }}
                     {{ add_order_form.client_id(class_="form-control", placeholder="Например: 123") }}
@@ -106,6 +150,7 @@
                     {% endif %}
                 </div>
 
+                <!-- Товар -->
                 <div class="col-md-5">
                     {{ add_order_form.product_id.label(class_="form-label") }}
                     {{ add_order_form.product_id(class_="form-select", aria_label="Выберите товар") }}
@@ -116,6 +161,7 @@
                     {% endif %}
                 </div>
 
+                <!-- Количество -->
                 <div class="col-md-2">
                     {{ add_order_form.quantity.label(class_="form-label") }}
                     {{ add_order_form.quantity(class_="form-control", type="number", min="1", max="999") }}
@@ -126,6 +172,19 @@
                     {% endif %}
                 </div>
 
+                <!-- ДАТА И ВРЕМЯ — КАЛЕНДАРИК! ✅ -->
+                <div class="col-md-12 mt-3">
+                    {{ add_order_form.created_at.label(class_="form-label") }}
+                    {{ add_order_form.created_at(class_="form-control", type="datetime-local", step="60") }}
+                    <small class="form-text text-muted">Выберите дату и время заказа — будет сохранена как реальная дата продажи</small>
+                    {% if add_order_form.created_at.errors %}
+                        {% for error in add_order_form.created_at.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+
+                <!-- Кнопка отправки -->
                 <div class="col-12 mt-4">
                     {{ add_order_form.submit(class_="btn btn-success btn-lg w-100") }}
                 </div>
@@ -137,8 +196,35 @@
 <!-- ================== СПИСОК ЗАКАЗОВ ================== -->
 <div class="card mb-4">
     <div class="card-header bg-light">
-        <h5 class="mb-0">📋 Последние заказы</h5>
+        <h5 class="mb-0">
+            📋
+            {% if selected_client_id %}
+                Заказы клиента #{{ selected_client_id }}
+            {% else %}
+                Последние заказы
+            {% endif %}
+        </h5>
+
+        <form method="GET" class="mt-2">
+            {{ filter_form_orders.hidden_tag() }}
+            <div class="row g-2 align-items-center">
+                <div class="col-auto">
+                    {{ filter_form_orders.client_id(
+                        value=selected_client_id or '',
+                        class="form-control form-control-sm",
+                        placeholder="Введите ID клиента"
+                    ) }}
+                </div>
+                <div class="col-auto">
+                    {{ filter_form_orders.submit(class="btn btn-sm btn-outline-secondary") }}
+                </div>
+                <div class="col-auto">
+                    <a href="{{ url_for('web.home') }}" class="btn btn-sm btn-outline-primary">Сбросить</a>
+                </div>
+            </div>
+        </form>
     </div>
+
     <div class="card-body">
         {% if orders %}
             <table class="table table-sm table-hover">
@@ -154,7 +240,7 @@
                 <tbody>
                     {% for o in orders %}
                     <tr>
-                        <td>{{ o.client.name }}</td>
+                        <td>{{ o.client.lastname }} {{ o.client.firstname }}</td>
                         <td>{{ o.product.name }}</td>
                         <td>{{ o.quantity }}</td>
                         <td><strong>{{ o.total_price }} ₽</strong></td>
@@ -168,7 +254,6 @@
         {% endif %}
     </div>
 </div>
-
 <!-- ================== ФОРМА ДОБАВЛЕНИЯ ТОВАРА ================== -->
 <div class="card mb-4">
     <div class="card-header bg-light">
@@ -220,8 +305,31 @@
 <!-- ================== СПИСОК ТОВАРОВ ================== -->
 <div class="card mb-4">
     <div class="card-header bg-light">
-        <h5 class="mb-0">📦 Все товары</h5>
+        <h5 class="mb-0">
+            📦
+            {% if selected_category %}
+                Товары из категории: {{ selected_category }}
+            {% else %}
+                Все товары
+            {% endif %}
+        </h5>
+
+        <form method="GET" class="mt-2">
+            {{ filter_form_product.hidden_tag() }}
+            <div class="row g-2 align-items-center">
+                <div class="col-auto">
+                    {{ filter_form_product.category(
+                        value=selected_category or '',
+                        class="form-select form-select-sm"
+                    ) }}
+                </div>
+                <div class="col-auto">
+                    {{ filter_form_product.submit(class="btn btn-sm btn-outline-secondary") }}
+                </div>
+            </div>
+        </form>
     </div>
+
     <div class="card-body">
         {% if products %}
             <table class="table table-sm table-hover">
@@ -240,8 +348,8 @@
                         <td>{{ p.name }}</td>
                         <td><strong>{{ p.price }} ₽</strong></td>
                         <td>{{ p.category or '-' }}</td>
-                        <td>{{ p.order_items | length }}</td>
-                        <td>{{ p.order_items | sum(attribute='total_price') }} ₽</td>
+                        <td>{{ p.total_sold }}</td>
+                        <td>{{ p.total_revenue }} ₽</td>
                     </tr>
                     {% endfor %}
                 </tbody>

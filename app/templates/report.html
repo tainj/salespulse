@@ -4,13 +4,36 @@
 {% block content %}
 <h2 class="mb-4">📊 Отчёт по продажам</h2>
 
-<!-- График продаж -->
+<!-- Графики для анализа -->
+<h3 class="mb-4 text-muted">📈 Графики для анализа продаж</h3>
+
+<!-- График: Динамика выручки по дням -->
 <div class="mb-4">
     {{ sales_chart|safe }}
 </div>
 
+<!-- График: Категории (круговая) -->
+<div class="mb-4">
+    {{ pie_chart|safe }}
+</div>
+
+<!-- График: Топ-5 клиентов -->
+<div class="mb-4">
+    {{ top_clients_chart|safe }}
+</div>
+
+<!-- График: Топ-5 товаров -->
+<div class="mb-4">
+    {{ top_products_chart|safe }}
+</div>
+
+<!-- ✅ НОВЫЙ ГРАФИК: Выручка по странам -->
+<div class="mb-4">
+    {{ country_revenue_chart|safe }}
+</div>
+
 <!-- Таблица общих данных -->
-<h4>📈 Общие данные</h4>
+<h4 class="mt-5">📈 Общие данные</h4>
 <table class="table table-bordered">
     <tr><th>Показатель</th><th>Значение</th></tr>
     <tr><td>Всего заказов</td><td><strong>{{ total_orders }}</strong></td></tr>
@@ -35,12 +58,12 @@
         <tbody>
             {% for o in orders %}
             <tr>
-                <td>{{ o.id }}</td>
-                <td>{{ o.client.name }}</td>
-                <td>{{ o.product.name }}</td>
-                <td>{{ o.quantity }}</td>
-                <td><strong>{{ o.total_price }} ₽</strong></td>
-                <td>{{ o.created_at.strftime('%d.%m.%Y') }}</td>
+                <td>{{ o.order.id }}</td>
+                <td>{{ o.firstname }} {{ o.lastname }}</td>
+                <td>{{ o.product_name }}</td>
+                <td>{{ o.order.quantity }}</td>
+                <td><strong>{{ o.order.total_price }} ₽</strong></td>
+                <td>{{ o.order.created_at.strftime('%d.%m.%Y') }}</td>
             </tr>
             {% endfor %}
         </tbody>
