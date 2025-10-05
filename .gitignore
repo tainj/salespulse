@@ -2,3 +2,4 @@
 .idea/
 db/store.db
 __pycache__/
+*.pyc
