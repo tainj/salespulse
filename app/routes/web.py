@@ -85,8 +85,9 @@ def home():
 
 @bp.route("/report")
 def report():
-    session = get_db()  # ваша сессия
+    session = get_db()
 
+    # Общая статистика
     stats = session.query(
         func.count(Order.id).label('total_orders'),
         func.sum(Order.total_price).label('total_revenue'),
@@ -98,62 +99,81 @@ def report():
     unique_clients = stats.unique_clients or 0
     avg_ticket = round(total_revenue / total_orders, 2) if total_orders > 0 else 0.0
 
-    top_clients = session.query(
-        Client.firstname,
-        Client.lastname,
-        func.sum(Order.total_price).label('revenue')
-    ).join(Order, Client.id == Order.client_id) \
-     .group_by(Client.id) \
-     .order_by(func.sum(Order.total_price).desc()) \
-     .limit(5) \
-     .all()
+    # === Топ-5 клиентов ===
+    try:
+        top_clients = session.query(
+            Client.firstname,
+            Client.lastname,
+            func.sum(Order.total_price).label('revenue')
+        ).join(Order, Client.id == Order.client_id) \
+         .group_by(Client.id) \
+         .order_by(func.sum(Order.total_price).desc()) \
+         .limit(5) \
+         .all()
 
-    top_client_names = [f"{c.firstname} {c.lastname}" for c in top_clients]
-    top_client_revenue = [float(r) for _, _, r in top_clients]
+        if not top_clients:
+            raise ValueError("No data")
 
-    fig_top_clients = px.bar(
-        x=top_client_names,
-        y=top_client_revenue,
-        labels={'x': 'Клиент', 'y': 'Выручка (₽)'},
-        title='🏆 Топ-5 клиентов по выручке',
-        color_discrete_sequence=['#2E86AB']
-    )
-    fig_top_clients.update_layout(
-        xaxis_tickangle=-45,
-        template='plotly_white'
-    )
-    top_clients_chart = fig_top_clients.to_html(full_html=False)
+        top_client_names = [f"{c.firstname} {c.lastname}" for c in top_clients]
+        top_client_revenue = [float(r) for _, _, r in top_clients]
 
-    category_sales = session.query(
-        Product.category,
-        func.sum(Order.total_price).label('revenue')
-    ).join(Order, Product.id == Order.product_id) \
-     .group_by(Product.category) \
-     .order_by(func.sum(Order.total_price).desc()) \
-     .all()
+        fig_top_clients = px.bar(
+            x=top_client_names,
+            y=top_client_revenue,
+            labels={'x': 'Клиент', 'y': 'Выручка (₽)'},
+            title='🏆 Топ-5 клиентов по выручке',
+            color_discrete_sequence=['#2E86AB']
+        )
+        fig_top_clients.update_layout(
+            xaxis_tickangle=-45,
+            template='plotly_white'
+        )
+        top_clients_chart = fig_top_clients.to_html(full_html=False)
+    except Exception:
+        top_clients_chart = "<div class='text-center text-muted'>Недостаточно данных для графика «Топ-5 клиентов по выручке».</div>"
 
-    categories = [cat for cat, _ in category_sales]
-    category_revenue = [float(rev) for _, rev in category_sales]
+    # === Пирог по категориям ===
+    try:
+        category_sales = session.query(
+            Product.category,
+            func.sum(Order.total_price).label('revenue')
+        ).join(Order, Product.id == Order.product_id) \
+         .group_by(Product.category) \
+         .order_by(func.sum(Order.total_price).desc()) \
+         .all()
 
-    fig_pie = px.pie(
-        names=categories,
-        values=category_revenue,
-        title='🎯 Доля продаж по категориям',
-        color_discrete_sequence=px.colors.qualitative.Set3
-    )
-    fig_pie.update_traces(textposition='inside', textinfo='percent+label')
-    pie_chart = fig_pie.to_html(full_html=False)
+        if not category_sales:
+            raise ValueError("No data")
 
-    daily_revenue = session.query(
-        func.date(Order.created_at).label('date'),
-        func.sum(Order.total_price).label('revenue')
-    ).group_by(func.date(Order.created_at)) \
-     .order_by('date') \
-     .all()
+        categories = [cat for cat, _ in category_sales]
+        category_revenue = [float(rev) for _, rev in category_sales]
 
-    if daily_revenue:
+        fig_pie = px.pie(
+            names=categories,
+            values=category_revenue,
+            title='🎯 Доля продаж по категориям',
+            color_discrete_sequence=px.colors.qualitative.Set3
+        )
+        fig_pie.update_traces(textposition='inside', textinfo='percent+label')
+        pie_chart = fig_pie.to_html(full_html=False)
+    except Exception:
+        pie_chart = "<div class='text-center text-muted'>Недостаточно данных для графика «Доля продаж по категориям».</div>"
+
+    # === Динамика выручки по дням ===
+    try:
+        daily_revenue = session.query(
+            func.date(Order.created_at).label('date'),
+            func.sum(Order.total_price).label('revenue')
+        ).group_by(func.date(Order.created_at)) \
+         .order_by('date') \
+         .all()
+
+        if not daily_revenue:
+            raise ValueError("No data")
+
         dates = [row.date for row in daily_revenue]
         revenues = [float(row.revenue) for row in daily_revenue]
+
         fig_line = px.line(
             x=dates,
             y=revenues,
@@ -162,58 +182,70 @@ def report():
         )
         fig_line.update_layout(template='plotly_white')
         sales_chart = fig_line.to_html(full_html=False)
-    else:
-        sales_chart = "<div class='text-center text-muted'>Нет данных для построения графика.</div>"
+    except Exception:
+        sales_chart = "<div class='text-center text-muted'>Недостаточно данных для графика «Динамика выручки по дням».</div>"
 
-    top_products = session.query(
-        Product.name,
-        func.sum(Order.quantity).label('total_sold')
-    ).join(Order, Product.id == Order.product_id) \
-     .group_by(Product.id) \
-     .order_by(func.sum(Order.quantity).desc()) \
-     .limit(5) \
-     .all()
-
-    product_names = [name for name, _ in top_products]
-    product_sold = [int(q) for _, q in top_products]
-
-    fig_top_products = px.bar(
-        x=product_names,
-        y=product_sold,
-        labels={'x': 'Товар', 'y': 'Количество проданных штук'},
-        title='🔥 Топ-5 самых продаваемых товаров',
-        color_discrete_sequence=['#C74A4A']
-    )
-    fig_top_products.update_layout(
-        xaxis_tickangle=-45,
-        template='plotly_white'
-    )
-    top_products_chart = fig_top_products.to_html(full_html=False)
-
-    OrderItem = namedtuple('OrderItem', ['order', 'firstname', 'lastname', 'product_name'])
-
-    orders = [
-        OrderItem(o, fn, ln, pn)
-        for o, fn, ln, pn in session.query(
-            Order, Client.firstname, Client.lastname, Product.name
-        ).join(Client, Order.client_id == Client.id)
-         .join(Product, Order.product_id == Product.id)
-         .order_by(Order.created_at.desc())
+    # === Топ-5 товаров ===
+    try:
+        top_products = session.query(
+            Product.name,
+            func.sum(Order.quantity).label('total_sold')
+        ).join(Order, Product.id == Order.product_id) \
+         .group_by(Product.id) \
+         .order_by(func.sum(Order.quantity).desc()) \
+         .limit(5) \
          .all()
-    ]
 
-    country_revenue = session.query(
-        Client.country,
-        func.sum(Order.total_price).label('revenue')
-    ).join(Order, Client.id == Order.client_id) \
-        .group_by(Client.country) \
-        .order_by(func.sum(Order.total_price).desc()) \
-        .all()
+        if not top_products:
+            raise ValueError("No data")
 
-    country_names = [country for country, _ in country_revenue]
-    country_revenues = [float(r) for _, r in country_revenue]
+        product_names = [name for name, _ in top_products]
+        product_sold = [int(q) for _, q in top_products]
 
-    if country_revenue:
+        fig_top_products = px.bar(
+            x=product_names,
+            y=product_sold,
+            labels={'x': 'Товар', 'y': 'Количество проданных штук'},
+            title='🔥 Топ-5 самых продаваемых товаров',
+            color_discrete_sequence=['#C74A4A']
+        )
+        fig_top_products.update_layout(
+            xaxis_tickangle=-45,
+            template='plotly_white'
+        )
+        top_products_chart = fig_top_products.to_html(full_html=False)
+    except Exception:
+        top_products_chart = "<div class='text-center text-muted'>Недостаточно данных для графика «Топ-5 самых продаваемых товаров».</div>"
+
+    # === Заказы (список) ===
+    try:
+        OrderItem = namedtuple('OrderItem', ['order', 'firstname', 'lastname', 'product_name'])
+        orders_raw = session.query(
+            Order, Client.firstname, Client.lastname, Product.name
+        ).join(Client, Order.client_id == Client.id) \
+         .join(Product, Order.product_id == Product.id) \
+         .order_by(Order.created_at.desc()) \
+         .all()
+        orders = [OrderItem(o, fn, ln, pn) for o, fn, ln, pn in orders_raw]
+    except Exception:
+        orders = []
+
+    # === Выручка по странам ===
+    try:
+        country_revenue = session.query(
+            Client.country,
+            func.sum(Order.total_price).label('revenue')
+        ).join(Order, Client.id == Order.client_id) \
+         .group_by(Client.country) \
+         .order_by(func.sum(Order.total_price).desc()) \
+         .all()
+
+        if not country_revenue:
+            raise ValueError("No data")
+
+        country_names = [country for country, _ in country_revenue]
+        country_revenues = [float(r) for _, r in country_revenue]
+
         fig_country = px.pie(
             names=country_names,
             values=country_revenues,
@@ -222,23 +254,22 @@ def report():
         )
         fig_country.update_traces(textposition='inside', textinfo='percent+label')
         country_revenue_chart = fig_country.to_html(full_html=False)
-    else:
-        country_revenue_chart = "<div class='text-center text-muted'>Нет данных по странам.</div>"
+    except Exception:
+        country_revenue_chart = "<div class='text-center text-muted'>Недостаточно данных для графика «Выручка по странам клиентов».</div>"
 
     return render_template("report.html",
         sales_chart=sales_chart,
         top_clients_chart=top_clients_chart,
         pie_chart=pie_chart,
         top_products_chart=top_products_chart,
+        country_revenue_chart=country_revenue_chart,
 
         total_orders=total_orders,
         total_revenue=round(total_revenue, 2),
         avg_ticket=avg_ticket,
         unique_clients=unique_clients,
-        orders=orders,
-        country_revenue_chart=country_revenue_chart
+        orders=orders
     )
-
 
 @bp.route("/add_order", methods=['GET', 'POST'])
 def add_order():
